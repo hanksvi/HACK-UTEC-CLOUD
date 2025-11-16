@@ -45,6 +45,14 @@ functions:
           path: /incidents/edit
           method: put
           cors: true
+          
+  GetAllIncidents:
+    handler: lambdas/GetAllIncidents.lambda_handler
+    events:
+      - http:
+          path: /incidents/all
+          method: get
+          cors: true
 
   ActualizarEstadoIncidente:
     handler: lambdas/Incidentes/ActualizarEstadoIncidente.lambda_handler
