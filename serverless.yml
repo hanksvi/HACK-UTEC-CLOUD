@@ -17,11 +17,6 @@ provider:
     JWT_SECRET: ${env:JWT_SECRET}
     JWT_EXPIRES_MINUTES: ${env:JWT_EXPIRES_MINUTES}
     WEBSOCKET_ENDPOINT: ${env:WEBSOCKET_ENDPOINT}
-    
-    USERS_TABLE: ${sls:stage}-t_usuarios
-    JWT_SECRET: super-clave-ultra-secreta-123
-    JWT_EXPIRES_MINUTES: 60
-    INCIDENTS_TABLE: Incidents
 
 functions:
   CrearUsuario:
