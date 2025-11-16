@@ -12,10 +12,12 @@ provider:
   iam:
     role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/${env:ROLE_NAME}
   environment:
-    USERS_TABLE: ${sls:stage}-t_usuarios
-    JWT_SECRET: super-clave-ultra-secreta-123
-    JWT_EXPIRES_MINUTES: 60
-
+    USERS_TABLE: ${env:USERS_TABLE}
+    SOCKET_TABLE: ${env:SOCKET_TABLE}
+    JWT_SECRET: ${env:JWT_SECRET}
+    JWT_EXPIRES_MINUTES: ${env:JWT_EXPIRES_MINUTES}
+    WEBSOCKET_ENDPOINT: ${env:WEBSOCKET_ENDPOINT}
+    
 functions:
   CrearUsuario:
     handler: lambdas/CrearUsuario.lambda_handler
@@ -32,6 +34,17 @@ functions:
           path: /usuarios/login
           method: post
           cors: true
+  Connect:
+    handler: websocket/connect.handler
+    events:
+      - websocket:
+          route: $connect
+
+  Disconnect:
+    handler: websocket/disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
 
 resources:
   Resources:
@@ -56,5 +69,17 @@ resources:
             AttributeType: S
         KeySchema:
           - AttributeName: incident_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    TablaConexionesWebSocket:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.SOCKET_TABLE}
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
