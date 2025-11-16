@@ -11,9 +11,42 @@ provider:
   timeout: 20
   iam:
     role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/${env:ROLE_NAME}
+  environment:
+    USERS_TABLE: ${sls:stage}-t_usuarios
+    JWT_SECRET: super-clave-ultra-secreta-123
+    JWT_EXPIRES_MINUTES: 60
+
+functions:
+  CrearUsuario:
+    handler: lambdas/CrearUsuario.lambda_handler
+    events:
+      - http:
+          path: /usuarios/register
+          method: post
+          cors: true
+
+  LoginUsuario:
+    handler: lambdas/LoginUsuario.lambda_handler
+    events:
+      - http:
+          path: /usuarios/login
+          method: post
+          cors: true
 
 resources:
   Resources:
+    TablaUsuarios:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USERS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: user_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: user_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
     IncidentsTable:
       Type: AWS::DynamoDB::Table
       Properties:
