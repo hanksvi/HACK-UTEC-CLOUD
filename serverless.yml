@@ -15,6 +15,7 @@ provider:
     USERS_TABLE: ${sls:stage}-t_usuarios
     JWT_SECRET: super-clave-ultra-secreta-123
     JWT_EXPIRES_MINUTES: 60
+    INCIDENTS_TABLE: Incidents
 
 functions:
   CrearUsuario:
@@ -35,6 +36,7 @@ functions:
 
 resources:
   Resources:
+
     TablaUsuarios:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -54,7 +56,41 @@ resources:
         AttributeDefinitions:
           - AttributeName: incident_id
             AttributeType: S
+          - AttributeName: student_id
+            AttributeType: S
+          - AttributeName: floor
+            AttributeType: N
+          - AttributeName: urgency
+            AttributeType: S
+
         KeySchema:
           - AttributeName: incident_id
             KeyType: HASH
+
         BillingMode: PAY_PER_REQUEST
+
+        GlobalSecondaryIndexes:
+
+          # GSI por alumno
+          - IndexName: IncidentsByStudent
+            KeySchema:
+              - AttributeName: student_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+          # GSI por piso
+          - IndexName: IncidentsByFloor
+            KeySchema:
+              - AttributeName: floor
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+          # GSI por urgencia
+          - IndexName: IncidentsByUrgency
+            KeySchema:
+              - AttributeName: urgency
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
