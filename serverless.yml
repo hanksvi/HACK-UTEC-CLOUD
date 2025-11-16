@@ -11,6 +11,8 @@ provider:
   stage: dev
   region: us-east-1
   timeout: 20
+  stage: dev
+  region: us-east-1
   iam:
     role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/${env:ROLE_NAME}
   environment:
@@ -79,7 +81,7 @@ functions:
           cors: true
 
   CrearUsuario:
-    handler: lambdas/CrearUsuario.lambda_handler
+    handler: lambdas/Usuarios/CrearUsuario.lambda_handler
     events:
       - http:
           path: /users/register
@@ -87,7 +89,7 @@ functions:
           cors: true
 
   LoginUsuario:
-    handler: lambdas/LoginUsuario.lambda_handler
+    handler: lambdas/Usuarios/LoginUsuario.lambda_handler
     events:
       - http:
           path: /users/login

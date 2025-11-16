@@ -4,6 +4,8 @@ import uuid
 import re
 import json
 import os
+from lambdas.utils import response
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -15,9 +17,7 @@ def lambda_handler(event, context):
     table = dynamodb.Table(table_name)
 
     try:
-
         # Obtener y parsear el body
-
         body = event.get("body")
 
         # API Gateway envía el body como string
@@ -26,22 +26,13 @@ def lambda_handler(event, context):
 
         # Si sigue sin ser dict → error
         if not isinstance(body, dict):
-            return {
-                "statusCode": 400,
-                "body": "El body debe ser un JSON válido"
-            }
+            return response(400, {"message": "El body debe ser un JSON válido"})
 
- 
         # Validar campos obligatorios correctamente
-  
         campos_requeridos = ["nombres", "apellidos", "dni", "correo", "password", "rol"]
-
         for campo in campos_requeridos:
-            if not body.get(campo):   # ahora sí validamos bien
-                return {
-                    "statusCode": 400,
-                    "body": f"El campo '{campo}' es obligatorio"
-                }
+            if not body.get(campo):
+                return response(400, {"message": f"El campo '{campo}' es obligatorio"})
 
         nombres     = body["nombres"]
         apellidos   = body["apellidos"]
@@ -50,62 +41,36 @@ def lambda_handler(event, context):
         password    = body["password"]
         rol         = body["rol"]
 
-     
         # Validar DNI
-
         if not dni.isdigit() or len(dni) != 8:
-            return {
-                "statusCode": 400,
-                "body": "El DNI debe tener exactamente 8 dígitos numéricos"
-            }
+            return response(400, {"message": "El DNI debe tener exactamente 8 dígitos numéricos"})
 
-        #  Validar correo
-     
+        # Validar correo
         patron_correo = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         if not re.match(patron_correo, correo):
-            return {
-                "statusCode": 400,
-                "body": "El correo tiene un formato inválido"
-            }
+            return response(400, {"message": "El correo tiene un formato inválido"})
 
-     
-        #  Validar rol permitido
-     
+        # Validar rol permitido
         if rol not in ROLES_VALIDOS:
-            return {
-                "statusCode": 400,
-                "body": "Rol inválido. Roles permitidos: Estudiante, Personal administrativo, Autoridad"
-            }
+            return response(400, {"message": "Rol inválido. Roles permitidos: Estudiante, Personal administrativo, Autoridad"})
 
-      
-        #  Validar correo único
-     
+        # Validar correo único
         resp_correo = table.scan(
             FilterExpression="correo = :correo",
             ExpressionAttributeValues={":correo": correo}
         )
         if resp_correo["Count"] > 0:
-            return {
-                "statusCode": 409,
-                "body": "El correo ya está registrado"
-            }
+            return response(409, {"message": "El correo ya está registrado"})
 
-   
         # Validar DNI único
-    
         resp_dni = table.scan(
             FilterExpression="dni = :dni",
             ExpressionAttributeValues={":dni": dni}
         )
         if resp_dni["Count"] > 0:
-            return {
-                "statusCode": 409,
-                "body": "El DNI ya está registrado"
-            }
+            return response(409, {"message": "El DNI ya está registrado"})
 
-    
         # Crear usuario
-    
         user_id = str(uuid.uuid4())
         hashed_pwd = hash_password(password)
 
@@ -121,16 +86,10 @@ def lambda_handler(event, context):
 
         table.put_item(Item=item)
 
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "message": "Usuario registrado correctamente",
-                "user_id": user_id
-            })
-        }
+        return response(200, {
+            "message": "Usuario registrado correctamente",
+            "user_id": user_id
+        })
 
     except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": f"Error interno: {str(e)}"
-        }
+        return response(500, {"message": f"Error interno: {str(e)}"})

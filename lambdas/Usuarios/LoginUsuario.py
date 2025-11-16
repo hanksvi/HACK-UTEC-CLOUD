@@ -5,31 +5,25 @@ import json
 import os
 import jwt
 from datetime import datetime, timedelta
+from lambdas.utils import response
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def lambda_handler(event, context):
     try:
-        
         # Parsear body
-        
         body = json.loads(event.get("body", "{}"))
 
         correo = body.get("correo")
         password = body.get("password")
 
         if not correo or not password:
-            return {
-                "statusCode": 400,
-                "body": json.dumps({"error": "correo y password son obligatorios"})
-            }
+            return response(400, {"error": "correo y password son obligatorios"})
 
         hashed_password = hash_password(password)
 
-
         # Conectar DynamoDB
-
         dynamodb = boto3.resource("dynamodb")
         table = dynamodb.Table(os.environ["USERS_TABLE"])
 
@@ -40,25 +34,15 @@ def lambda_handler(event, context):
         )
 
         if resp["Count"] == 0:
-            return {
-                "statusCode": 403,
-                "body": json.dumps({"error": "Usuario no existe"})
-            }
+            return response(403, {"error": "Usuario no existe"})
 
         usuario = resp["Items"][0]
 
-        
         # Validar contraseña
-        
         if hashed_password != usuario["password"]:
-            return {
-                "statusCode": 403,
-                "body": json.dumps({"error": "Password incorrecto"})
-            }
+            return response(403, {"error": "Password incorrecto"})
 
-        
         # GENERAR JWT
-        
         secret = os.environ["JWT_SECRET"]
 
         payload = {
@@ -70,20 +54,12 @@ def lambda_handler(event, context):
 
         token = jwt.encode(payload, secret, algorithm="HS256")
 
-        
-        #Respuesta
-        
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "message": "Login exitoso",
-                "token": token,
-                "expira_en": "1 hora"
-            })
-        }
+        # Respuesta
+        return response(200, {
+            "message": "Login exitoso",
+            "token": token,
+            "expira_en": "1 hora"
+        })
 
     except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(e)})
-        }
+        return response(500, {"error": str(e)})

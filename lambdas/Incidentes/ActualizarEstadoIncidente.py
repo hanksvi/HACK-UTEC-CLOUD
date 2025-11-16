@@ -3,6 +3,8 @@ import os
 import json
 from datetime import datetime, timezone
 from WebSocket.notify import notify_role, notify_user
+from lambdas.utils import response
+
 ROLES_AUTORIZADOS = ["Personal administrativo", "Autoridad"]
 
 ddb = boto3.resource("dynamodb")
@@ -22,35 +24,26 @@ def lambda_handler(event, context):
 
         # Validar campos
         if not incident_id or not new_status or not user_id:
-            return {
-                "statusCode": 400,
-                "body": "Campos requeridos: incident_id, new_status, user_id"
-            }
+            return response(400, {"message": "Campos requeridos: incident_id, new_status, user_id"})
 
         # Validar status permitido
         if new_status not in ["pending", "in_progress", "completed", "rejected"]:
-            return {
-                "statusCode": 400,
-                "body": "Estado inválido"
-            }
+            return response(400, {"message": "Estado inválido"})
 
         # Obtener rol del usuario
         user_resp = users_table.get_item(Key={"user_id": user_id})
         if "Item" not in user_resp:
-            return {"statusCode": 404, "body": "Usuario no encontrado"}
+            return response(404, {"message": "Usuario no encontrado"})
 
         rol = user_resp["Item"].get("rol")
 
         if rol not in ROLES_AUTORIZADOS:
-            return {
-                "statusCode": 403,
-                "body": "No tiene permisos para actualizar incidentes"
-            }
+            return response(403, {"message": "No tiene permisos para actualizar incidentes"})
 
         # Obtener incidente
         incident_resp = table.get_item(Key={"incident_id": incident_id})
         if "Item" not in incident_resp:
-            return {"statusCode": 404, "body": "Incidente no encontrado"}
+            return response(404, {"message": "Incidente no encontrado"})
 
         incident = incident_resp["Item"]
         old_status = incident.get("status")
@@ -96,17 +89,11 @@ def lambda_handler(event, context):
             }
             notify_user(message_student, created_by)
 
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "message": "Estado actualizado correctamente",
-                "incident_id": incident_id,
-                "new_status": new_status
-            })
-        }
+        return response(200, {
+            "message": "Estado actualizado correctamente",
+            "incident_id": incident_id,
+            "new_status": new_status
+        })
 
     except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": f"Error interno: {str(e)}"
-        }
+        return response(500, {"message": f"Error interno: {str(e)}"})
