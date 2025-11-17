@@ -24,6 +24,7 @@ export interface Incident {
   ubicacion: string;
   estado: 'Pendiente' | 'En Atención' | 'Resuelto' | 'Rechazado';
   timestamp: string;
+  createdAt?: number;
   fecha: string;
   reportadoPor: string;
   _raw?: {
