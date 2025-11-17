@@ -100,11 +100,14 @@ const AuthorityDashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       tipo: INCIDENT_TYPE_LABELS[inc.type] || inc.type || 'Desconocido',
       urgencia: (URGENCY_LABELS[inc.urgency] || inc.urgency || 'Media') as 'Baja' | 'Media' | 'Alta' | 'Crítica',
       descripcion: inc.description || 'Sin descripción',
+       createdAt: new Date(inc.created_at).getTime(),
       ubicacion: `Piso ${inc.floor || 0}${inc.ambient ? ' - ' + inc.ambient : ''}`,
       estado: (STATUS_LABELS[inc.status] || inc.status || 'Pendiente') as 'Pendiente' | 'En Atención' | 'Resuelto',
       timestamp,
       fecha,
+      
       reportadoPor: inc.reported_by_name || inc.created_by || 'Desconocido',
+      
       _raw: {
         floor: inc.floor,
         urgency: inc.urgency,
@@ -160,10 +163,7 @@ const AuthorityDashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           if (urgencyA !== urgencyB) {
             return urgencyB - urgencyA;
           }
-          
-          const dateA = new Date(a.fecha || 0).getTime();
-          const dateB = new Date(b.fecha || 0).getTime();
-          return dateB - dateA;
+          return b.createdAt! - a.createdAt!;
         });
         
         setIncidents(sortedIncidents);
